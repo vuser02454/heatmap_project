@@ -5434,3 +5434,35 @@ body.cinematic-mode .explore-mode-btn {
         font-size: 0.875rem;
     }
 }
+
+/* Dashboard Form Suggestions */
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg-secondary, #ffffff);
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 0 0 4px 4px;
+    z-index: 1050;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+.suggestions-list .list-group-item {
+    padding: 0.5rem 1rem;
+    color: var(--text-primary, #333);
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    background: var(--bg-secondary, #ffffff);
+}
+
+.suggestions-list .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.suggestions-list .list-group-item:hover {
+    background-color: var(--bg-tertiary, #f8f9fa);
+    cursor: pointer;
+}

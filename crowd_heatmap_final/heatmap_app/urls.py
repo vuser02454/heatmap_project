@@ -16,4 +16,6 @@ urlpatterns = [
     path('api/user-location/', views.report_user_location, name='report_user_location'),
     path('api/analyze-location/', views.analyze_location, name='analyze_location'),
     path('api/generate-best-locations/', views.generate_best_locations, name='generate_best_locations'),
+    path('api/business-types/', views.get_business_types, name='get_business_types'),
+    path('api/find-matching-locations/', views.find_matching_locations, name='find_matching_locations'),
 ]

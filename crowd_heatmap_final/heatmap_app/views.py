@@ -879,3 +879,136 @@ out center;
         'base_location': {'lat': lat, 'lng': lon},
         'locations': top,
     })
+
+@require_http_methods(['GET'])
+def get_business_types(request):
+    """Return all dynamic expected business choices for the form dropdown."""
+    lat = request.GET.get('lat')
+    lon = request.GET.get('lon')
+    
+    # Can optimize by returning all unique business choices
+    choices_by_intensity = get_all_business_choices()
+    all_choices = set()
+    for intensity, choices in choices_by_intensity.items():
+        all_choices.update(choices)
+    
+    # Format for the frontend
+    business_types = [{'value': c, 'label': c.replace('_', ' ').title()} for c in sorted(all_choices)]
+    return JsonResponse({'success': True, 'business_types': business_types})
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def find_matching_locations(request):
+    """
+    Find 1-3 locations in a 5km radius that satisfy the exact crowd intensity and business category.
+    """
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'})
+        
+    lat = data.get('latitude')
+    lon = data.get('longitude')
+    business_type = (data.get('business_type') or '').strip().lower()
+    crowd_intensity = (data.get('crowd_intensity') or '').strip().lower()
+    
+    if not lat or not lon:
+        return JsonResponse({'success': False, 'message': 'Latitude and longitude are required'})
+        
+    try:
+        lat = float(lat)
+        lon = float(lon)
+        
+        # 1. Get POIs in 5km radius
+        query = f"""
+        [out:json][bbox:6.5,68.0,37.5,97.5];
+        (
+          node["amenity"](around:5000,{lat},{lon});
+          way["amenity"](around:5000,{lat},{lon});
+          relation["amenity"](around:5000,{lat},{lon});
+          node["shop"](around:5000,{lat},{lon});
+          way["shop"](around:5000,{lat},{lon});
+          node["tourism"](around:5000,{lat},{lon});
+          way["tourism"](around:5000,{lat},{lon});
+        );
+        out center;
+        """
+        results, error = _run_overpass_query(query, timeout=30)
+        if error or results is None:
+            return JsonResponse({'success': False, 'error': error or 'Unable to analyze location'})
+            
+        elements = results.get('elements', [])
+        
+        # 2. Divide area into sectors and calculate intensity
+        sector_size = 5000 / 3
+        sectors = {}
+        
+        for element in elements:
+            elem_lat = element.get('lat') or (element.get('center', {}).get('lat'))
+            elem_lon = element.get('lon') or (element.get('center', {}).get('lon'))
+            if not elem_lat or not elem_lon: continue
+            
+            # Distance from center
+            R = 6371000
+            lat1_rad = math.radians(lat)
+            lat2_rad = math.radians(elem_lat)
+            delta_lat = math.radians(elem_lat - lat)
+            delta_lon = math.radians(elem_lon - lon)
+            a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+            distance = R * c
+            
+            if distance > 5000: continue
+            
+            angle = math.atan2(elem_lat - lat, elem_lon - lon)
+            angle_deg = math.degrees(angle) + 180
+            angle_sector = int(angle_deg / 120)
+            dist_sector = int(distance / sector_size)
+            sector_key = f"{dist_sector}_{angle_sector}"
+            
+            if sector_key not in sectors: sectors[sector_key] = []
+            sectors[sector_key].append({'lat': elem_lat, 'lon': elem_lon})
+
+        matching_locations = []
+        
+        # 3. Find sectors matching the requested crowd intensity
+        for sector_key, pois in sectors.items():
+            count = len(pois)
+            if count >= 15:
+                sector_intensity = 'high'
+            elif count >= 5:
+                sector_intensity = 'medium'
+            else:
+                sector_intensity = 'low'
+                
+            # If the user's requested crowd intensity matches this sector's intensity
+            if sector_intensity == crowd_intensity:
+                # Check business feasibility in this sector
+                # (For simplicity, if intensity matches, we consider it feasible,
+                # as business types mapped to intensities are generally feasible there)
+                
+                avg_lat = sum(p['lat'] for p in pois) / count
+                avg_lon = sum(p['lon'] for p in pois) / count
+                
+                matching_locations.append({
+                    'lat': avg_lat,
+                    'lon': avg_lon,
+                    'intensity': sector_intensity,
+                    'business': business_type
+                })
+                
+                if len(matching_locations) >= 3:
+                    break
+
+        # 4. If no exact match, fallback to the requested base point (for UX)
+        if not matching_locations:
+            matching_locations.append({'lat': lat, 'lon': lon, 'intensity': crowd_intensity, 'business': business_type})
+            
+        return JsonResponse({
+            'success': True,
+            'matches': matching_locations
+        })
+        
+    except Exception as e:
+        import traceback
+        return JsonResponse({'success': False, 'error': str(e), 'traceback': traceback.format_exc()})

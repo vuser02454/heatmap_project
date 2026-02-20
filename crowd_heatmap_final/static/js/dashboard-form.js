@@ -4,7 +4,7 @@ function initDashboardStartupForm() {
     // Location search autocomplete for dashboard form
     const formLocInput = document.getElementById('dashboard-form-location-search');
     const formLocSuggestions = document.getElementById('dashboard-form-location-suggestions');
-    
+
     if (formLocInput && formLocSuggestions) {
         let formLocTimer = null;
         formLocInput.addEventListener('input', function () {
@@ -19,37 +19,37 @@ function initDashboardStartupForm() {
                 try {
                     const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1&countrycodes=in`);
                     const results = await response.json();
-                    
+
                     if (!results || results.length === 0) {
                         formLocSuggestions.innerHTML = '<div class="list-group-item text-muted">No results found</div>';
                         formLocSuggestions.style.display = 'block';
                         return;
                     }
-                    
+
                     formLocSuggestions.innerHTML = '';
                     results.forEach(result => {
                         const item = document.createElement('div');
                         item.className = 'list-group-item list-group-item-action';
                         item.style.cursor = 'pointer';
-                        
+
                         const displayName = result.display_name || result.name;
                         item.textContent = displayName;
-                        
+
                         item.addEventListener('click', () => {
                             formLocInput.value = displayName;
                             formLocSuggestions.innerHTML = '';
                             formLocSuggestions.style.display = 'none';
-                            
+
                             // Store coordinates
                             const lat = parseFloat(result.lat);
                             const lon = parseFloat(result.lon);
                             document.getElementById('dashboard-id_latitude').value = lat;
                             document.getElementById('dashboard-id_longitude').value = lon;
-                            
+
                             // Load business types for this location
                             loadBusinessTypesForLocation(lat, lon);
                         });
-                        
+
                         formLocSuggestions.appendChild(item);
                     });
                     formLocSuggestions.style.display = 'block';
@@ -58,32 +58,32 @@ function initDashboardStartupForm() {
                 }
             }, 300);
         });
-        
+
         // Close suggestions when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             if (!formLocInput.contains(e.target) && !formLocSuggestions.contains(e.target)) {
                 formLocSuggestions.style.display = 'none';
             }
         });
     }
-    
+
     // Form submission
     const form = document.getElementById('dashboard-business-form');
     if (form) {
-        form.addEventListener('submit', async function(e) {
+        form.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const formData = new FormData(form);
             const submitBtn = document.getElementById('dashboard-submit-business-form-btn');
             const messageDiv = document.getElementById('dashboard-form-message');
             const resultBanner = document.getElementById('dashboard-feasibility-result-banner');
-            
+
             // Show loading state
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
             messageDiv.innerHTML = '';
             resultBanner.classList.add('d-none');
-            
+
             try {
                 const response = await fetch('/submit-form/', {
                     method: 'POST',
@@ -92,13 +92,13 @@ function initDashboardStartupForm() {
                         'X-CSRFToken': formData.get('csrfmiddlewaretoken')
                     }
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // Show success message
                     messageDiv.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>${data.message}</div>`;
-                    
+
                     // Show feasibility result if available
                     if (data.feasibility) {
                         resultBanner.classList.remove('d-none');
@@ -108,13 +108,102 @@ function initDashboardStartupForm() {
                             ${data.feasibility.score ? `<br>Score: ${data.feasibility.score}/100` : ''}
                         `;
                     }
-                    
-                    // Reset form after successful submission
-                    setTimeout(() => {
-                        form.reset();
-                        document.getElementById('dashboard-id_business_type_dropdown').innerHTML = '<option value="">-- Search a location first --</option>';
-                        resultBanner.classList.add('d-none');
-                    }, 3000);
+
+                    // Fetch matching locations for the map
+                    const lat = document.getElementById('dashboard-id_latitude').value;
+                    const lon = document.getElementById('dashboard-id_longitude').value;
+                    const businessType = document.getElementById('dashboard-id_business_type_dropdown').value;
+                    const crowdIntensity = document.getElementById('dashboard-id_crowd_intensity').value;
+
+                    try {
+                        const matchRes = await fetch('/api/find-matching-locations/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                            },
+                            body: JSON.stringify({
+                                latitude: lat,
+                                longitude: lon,
+                                business_type: businessType,
+                                crowd_intensity: crowdIntensity
+                            })
+                        });
+                        const matchData = await matchRes.json();
+
+                        if (matchData.success && matchData.matches && matchData.matches.length > 0) {
+                            // Delay briefly for user to read success message, then redirect to Map
+                            setTimeout(async () => {
+                                // Hide form and launchpad, show map
+                                document.getElementById('dashboard-startup-form-section').classList.add('d-none');
+                                document.getElementById('dashboard-launchpad').classList.add('d-none');
+                                const mapContainer = document.getElementById('dynamic-map-container');
+                                mapContainer.classList.remove('d-none');
+
+                                // Reset form
+                                form.reset();
+                                document.getElementById('dashboard-id_business_type_dropdown').innerHTML = '<option value="">-- Search a location first --</option>';
+                                resultBanner.classList.add('d-none');
+                                messageDiv.innerHTML = '';
+
+                                // Initialize/Update Map
+                                if (typeof initDynamicDashboardMap === 'function') {
+                                    initDynamicDashboardMap();
+                                }
+
+                                // Ensure map is available and clear old orange markers
+                                if (typeof dashboardMap !== 'undefined' && dashboardMap) {
+                                    if (typeof orangeMarkers !== 'undefined') {
+                                        orangeMarkers.forEach(m => dashboardMap.removeLayer(m));
+                                        orangeMarkers = [];
+                                    } else {
+                                        window.orangeMarkers = [];
+                                    }
+
+                                    // Add new orange markers
+                                    const bounds = L.latLngBounds();
+                                    const orangeIcon = L.icon({
+                                        iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
+                                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                                        iconSize: [25, 41],
+                                        iconAnchor: [12, 41],
+                                        popupAnchor: [1, -34],
+                                        shadowSize: [41, 41]
+                                    });
+
+                                    matchData.matches.forEach((loc, idx) => {
+                                        const latLng = [loc.lat, loc.lon];
+                                        const marker = L.marker(latLng, { icon: orangeIcon }).addTo(dashboardMap)
+                                            .bindPopup(`<b>Potential Location ${idx + 1}</b><br>Suitable for ${loc.business.replace('_', ' ').toUpperCase()}<br>Intensity: ${loc.intensity.toUpperCase()}`);
+                                        window.orangeMarkers.push(marker);
+                                        bounds.extend(latLng);
+                                    });
+
+                                    // Open first popup and fit bounds
+                                    if (window.orangeMarkers.length > 0) {
+                                        window.orangeMarkers[0].openPopup();
+                                        dashboardMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                                    }
+
+                                    // Fetch popular places to show the 5km radius heatmap data on the map
+                                    if (typeof findPopularPlaces === 'function') {
+                                        try {
+                                            await findPopularPlaces(lat, lon, false);
+                                        } catch (err) {
+                                            console.error("Error fetching popular places:", err);
+                                        }
+                                    }
+                                }
+                            }, 1500);
+                        }
+                    } catch (e) {
+                        console.error('Error fetching matching locations:', e);
+                        setTimeout(() => {
+                            form.reset();
+                            document.getElementById('dashboard-id_business_type_dropdown').innerHTML = '<option value="">-- Search a location first --</option>';
+                            resultBanner.classList.add('d-none');
+                        }, 3000);
+                    }
                 } else {
                     // Show error message
                     messageDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${data.message || 'Submission failed. Please try again.'}</div>`;
@@ -128,11 +217,11 @@ function initDashboardStartupForm() {
             }
         });
     }
-    
+
     // Reset button
     const resetBtn = document.getElementById('dashboard-reset-business-form-btn');
     if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
+        resetBtn.addEventListener('click', function () {
             const form = document.getElementById('dashboard-business-form');
             if (form) {
                 form.reset();
@@ -150,13 +239,13 @@ function initDashboardStartupForm() {
 async function loadBusinessTypesForLocation(lat, lon) {
     const dropdown = document.getElementById('dashboard-id_business_type_dropdown');
     const hint = document.getElementById('dashboard-form-flow-hint');
-    
+
     if (!dropdown) return;
-    
+
     try {
         const response = await fetch(`/api/business-types/?lat=${lat}&lon=${lon}`);
         const data = await response.json();
-        
+
         if (data.business_types && data.business_types.length > 0) {
             dropdown.innerHTML = '<option value="">-- Select business type --</option>';
             data.business_types.forEach(type => {
@@ -165,7 +254,7 @@ async function loadBusinessTypesForLocation(lat, lon) {
                 option.textContent = type.label || type;
                 dropdown.appendChild(option);
             });
-            
+
             if (hint) {
                 hint.innerHTML = '<i class="fas fa-check-circle me-1 text-success"></i>Business types loaded for this location.';
             }
