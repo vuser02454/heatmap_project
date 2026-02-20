@@ -179,11 +179,16 @@ function initDashboardStartupForm() {
                                         bounds.extend(latLng);
                                     });
 
-                                    // Open first popup and fit bounds
+                                    // Open first popup and center map on searched location to show 5km radius
                                     if (window.orangeMarkers.length > 0) {
                                         window.orangeMarkers[0].openPopup();
-                                        dashboardMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
                                     }
+
+                                    // Fly to the searched location with zoom 13 to well-display the 5km radius
+                                    dashboardMap.flyTo([lat, lon], 13, {
+                                        animate: true,
+                                        duration: 1.5
+                                    });
 
                                     // Fetch popular places to show the 5km radius heatmap data on the map
                                     if (typeof findPopularPlaces === 'function') {
