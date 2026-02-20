@@ -61,67 +61,119 @@
             </div>
         </header>
 
-        <!-- Service Launchpad (Options) -->
-        <div id="dashboard-launchpad" class="dashboard-launchpad">
-            <h2 class="dashboard-subtitle text-center mb-4">Select a Service to Begin</h2>
-            <div class="dashboard-launchpad-grid">
-                <!-- Live Heatmap Card (Triggers Map) -->
-                <div class="launchpad-card" id="btn-show-map">
-                    <div class="launchpad-icon icon-heatmap">
-                        <i class="fas fa-map-marked-alt"></i>
-                    </div>
-                    <div class="launchpad-content">
-                        <h3>Live Heatmap</h3>
-                        <p>Visualize real-time crowd density and hotspots.</p>
-                    </div>
-                    <div class="launchpad-action">Launch <i class="fas fa-arrow-right ms-2"></i></div>
+        <!-- Feature Showcase Launchpad -->
+        <div id="dashboard-launchpad" class="feature-showcase-launchpad">
+            <div class="feature-hero">
+                <div class="feature-hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>AI-Powered Platform</span>
+                </div>
+                <h1 class="feature-hero-title">Crowd Heatmap Intelligence</h1>
+                <p class="feature-hero-sub">Real-time crowd analytics, business intelligence, and location insights —
+                    all in one platform.</p>
+                <div class="feature-cta-row">
+                    <button class="btn-feature-primary" id="btn-show-map">
+                        <i class="fas fa-map-marked-alt"></i> Launch Live Map
+                    </button>
+                    <button class="btn-feature-outline" id="btn-show-ai-recommender">
+                        <i class="fas fa-brain"></i> AI Recommender
+                    </button>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <!-- Feature 1 -->
+                <div class="feature-tile tile-heatmap">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-fire-alt"></i></div>
+                    <h3>Live Heatmap</h3>
+                    <p>Visualize real-time crowd density across any area with dynamic colour-coded heat overlays — red
+                        for high, orange for moderate, green for low.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> 5km radius scan</li>
+                        <li><i class="fas fa-check"></i> Sector-level intensity</li>
+                        <li><i class="fas fa-check"></i> Live POI density</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-map-2">Launch <i class="fas fa-arrow-right"></i></button>
                 </div>
 
-                <!-- AI Recommender Card -->
-                <div class="launchpad-card" id="btn-show-ai-recommender">
-                    <div class="launchpad-icon icon-ai">
-                        <i class="fas fa-brain"></i>
-                    </div>
-                    <div class="launchpad-content">
-                        <h3>AI Recommender</h3>
-                        <p>Get data-driven business type suggestions.</p>
-                    </div>
-                    <div class="launchpad-action">Explore <i class="fas fa-arrow-right ms-2"></i></div>
+                <!-- Feature 2 -->
+                <div class="feature-tile tile-ai">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-brain"></i></div>
+                    <h3>AI Business Recommender</h3>
+                    <p>Submit your startup criteria and receive precision-matched business location recommendations with
+                        orange marker pinpoints placed directly inside the right crowd zone.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Business type matching</li>
+                        <li><i class="fas fa-check"></i> Crowd-based targeting</li>
+                        <li><i class="fas fa-check"></i> Orange marker precision</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-ai-recommender-2">Explore <i
+                            class="fas fa-arrow-right"></i></button>
                 </div>
 
-                <!-- Market Analytics Card -->
-                <div class="launchpad-card">
-                    <div class="launchpad-icon icon-analytics">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="launchpad-content">
-                        <h3>Market Metrics</h3>
-                        <p>Analyze footfall trends and area demographics.</p>
-                    </div>
-                    <div class="launchpad-action">View <i class="fas fa-arrow-right ms-2"></i></div>
+                <!-- Feature 3 -->
+                <div class="feature-tile tile-revenue">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Revenue Intelligence</h3>
+                    <p>Predict estimated monthly and daily revenue for any business type in any neighbourhood using real
+                        footfall data and custom scoring models.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Daily & monthly estimates</li>
+                        <li><i class="fas fa-check"></i> Potential score (0–100)</li>
+                        <li><i class="fas fa-check"></i> Business health grade</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-flashcards">View <i
+                            class="fas fa-arrow-right"></i></button>
                 </div>
 
-                <!-- Feasibility Check Card -->
-                <div class="launchpad-card" id="btn-show-feasibility">
-                    <div class="launchpad-icon icon-check">
-                        <i class="fas fa-clipboard-check"></i>
-                    </div>
-                    <div class="launchpad-content">
-                        <h3>Feasibility Check</h3>
-                        <p>Validate your business idea for a location.</p>
-                    </div>
-                    <div class="launchpad-action">Analyze <i class="fas fa-arrow-right ms-2"></i></div>
+                <!-- Feature 4 -->
+                <div class="feature-tile tile-feasibility">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-clipboard-check"></i></div>
+                    <h3>Feasibility Engine</h3>
+                    <p>Validate your business idea against location-specific crowd intensity. Know before you invest
+                        whether your chosen area is viable for your business type.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Location viability score</li>
+                        <li><i class="fas fa-check"></i> Crowd compatibility check</li>
+                        <li><i class="fas fa-check"></i> Risk assessment</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-feasibility">Analyze <i
+                            class="fas fa-arrow-right"></i></button>
                 </div>
-                <!-- Business Flashcards Card -->
-                <div class="launchpad-card" id="btn-show-flashcards">
-                    <div class="launchpad-icon icon-flashcards">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="launchpad-content">
-                        <h3>Business Flashcards</h3>
-                        <p>Quick intelligence for top business opportunities.</p>
-                    </div>
-                    <div class="launchpad-action">Open <i class="fas fa-arrow-right ms-2"></i></div>
+
+                <!-- Feature 5 -->
+                <div class="feature-tile tile-places">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-map-pin"></i></div>
+                    <h3>Popular Places Radar</h3>
+                    <p>Discover thriving businesses within 5km with a visual radius scan. See crowd timing, best visit
+                        windows, and routing paths to each POI on the map.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> 5km radar scan</li>
+                        <li><i class="fas fa-check"></i> Best time windows</li>
+                        <li><i class="fas fa-check"></i> Dijkstra routing</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-map-3">Scan <i class="fas fa-arrow-right"></i></button>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-tile tile-startup">
+                    <div class="tile-glow"></div>
+                    <div class="tile-icon"><i class="fas fa-rocket"></i></div>
+                    <h3>Startup Form</h3>
+                    <p>Fill in your business details and instantly receive a map redirect showing your ideal locations
+                        as orange markers overlaid onto heatmap intensity zones.</p>
+                    <ul class="tile-features">
+                        <li><i class="fas fa-check"></i> Auto map redirect</li>
+                        <li><i class="fas fa-check"></i> Orange marker placement</li>
+                        <li><i class="fas fa-check"></i> Intensity zone overlay</li>
+                    </ul>
+                    <button class="tile-action" id="btn-show-startup-form-from-launchpad">Start <i
+                            class="fas fa-arrow-right"></i></button>
                 </div>
             </div>
         </div>

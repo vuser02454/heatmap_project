@@ -3675,6 +3675,34 @@ function initDashboardInteractions() {
         });
     }
 
+    // Feature showcase tile: extra Launch Map tiles (btn-show-map-2 and btn-show-map-3)
+    ['btn-show-map-2', 'btn-show-map-3'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const primaryMapBtn = document.getElementById('btn-show-map');
+                if (primaryMapBtn) primaryMapBtn.click();
+            });
+        }
+    });
+
+    // Feature showcase tile: extra AI recommender
+    const showAiBtn2 = document.getElementById('btn-show-ai-recommender-2');
+    if (showAiBtn2) {
+        showAiBtn2.addEventListener('click', async () => {
+            await openDashboardDataOnlyMode('ai');
+        });
+    }
+
+    // Feature showcase tile: Startup Form direct from launchpad
+    const showStartupFromLaunchpad = document.getElementById('btn-show-startup-form-from-launchpad');
+    if (showStartupFromLaunchpad) {
+        showStartupFromLaunchpad.addEventListener('click', () => {
+            const sidebarLink = document.getElementById('sidebar-startup-form-link');
+            if (sidebarLink) sidebarLink.click();
+        });
+    }
+
     // Sidebar Startup Form Link
     const sidebarStartupFormLink = document.getElementById('sidebar-startup-form-link');
     console.log('Sidebar startup form link found:', sidebarStartupFormLink);
