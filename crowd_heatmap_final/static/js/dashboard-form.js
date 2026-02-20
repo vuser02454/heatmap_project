@@ -146,68 +146,75 @@ function initDashboardStartupForm() {
                                 resultBanner.classList.add('d-none');
                                 messageDiv.innerHTML = '';
 
-                                // Initialize/Update Map
+                                // Initialize map if not ready yet
                                 if (typeof initDynamicDashboardMap === 'function') {
                                     initDynamicDashboardMap();
                                 }
 
-                                // Ensure map is available and clear old orange markers
+                                // Wait a tick for map DOM to settle after being shown
+                                await new Promise(r => setTimeout(r, 300));
+
+                                // Force-sync global `map` to dashboardMap so all heatmap functions draw here
                                 if (typeof dashboardMap !== 'undefined' && dashboardMap) {
-                                    if (typeof orangeMarkers !== 'undefined') {
-                                        orangeMarkers.forEach(m => dashboardMap.removeLayer(m));
-                                        orangeMarkers = [];
-                                    } else {
-                                        window.orangeMarkers = [];
-                                    }
-
-                                    // Add new orange markers
-                                    const bounds = L.latLngBounds();
-                                    const orangeIcon = L.icon({
-                                        iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
-                                        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-                                        iconSize: [25, 41],
-                                        iconAnchor: [12, 41],
-                                        popupAnchor: [1, -34],
-                                        shadowSize: [41, 41]
-                                    });
-
-                                    matchData.matches.forEach((loc, idx) => {
-                                        const latLng = [loc.lat, loc.lon];
-                                        const marker = L.marker(latLng, { icon: orangeIcon }).addTo(dashboardMap)
-                                            .bindPopup(`<b>Potential Location ${idx + 1}</b><br>Suitable for ${loc.business.replace('_', ' ').toUpperCase()}<br>Intensity: ${loc.intensity.toUpperCase()}`);
-                                        window.orangeMarkers.push(marker);
-                                        bounds.extend(latLng);
-                                    });
-
-                                    // Open first popup and center map on searched location to show 5km radius
-                                    if (window.orangeMarkers.length > 0) {
-                                        window.orangeMarkers[0].openPopup();
-
-                                        const targetLat = matchData.matches[0].lat;
-                                        const targetLon = matchData.matches[0].lon;
-
-                                        // Fly to the matched orange marker with zoom 13 to well-display the 5km radius globally
-                                        dashboardMap.flyTo([targetLat, targetLon], 13, {
-                                            animate: true,
-                                            duration: 1.5
-                                        });
-
-                                        // Sync global map variable so `findPopularPlaces` and `updateCrowdIntensityDropdown` draw on the correct map
-                                        if (typeof map !== 'undefined' && typeof dashboardMap !== 'undefined') {
-                                            window.map = dashboardMap;
-                                        }
-
-                                        // Fetch popular places using the orange marker as the epicenter
-                                        // so that the 5km radius and heatmap overlay perfectly align with the marker
-                                        if (typeof findPopularPlaces === 'function') {
-                                            try {
-                                                await findPopularPlaces(targetLat, targetLon, false);
-                                            } catch (err) {
-                                                console.error("Error fetching popular places:", err);
-                                            }
-                                        }
-                                    }
+                                    window.map = dashboardMap;
+                                    dashboardMap.invalidateSize();
                                 }
+
+                                if (typeof dashboardMap === 'undefined' || !dashboardMap) return;
+
+                                // Clear old orange markers
+                                if (Array.isArray(window.orangeMarkers)) {
+                                    window.orangeMarkers.forEach(m => dashboardMap.removeLayer(m));
+                                }
+                                window.orangeMarkers = [];
+
+                                // Add new orange markers
+                                const orangeIcon = L.icon({
+                                    iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34],
+                                    shadowSize: [41, 41]
+                                });
+
+                                matchData.matches.forEach((loc, idx) => {
+                                    const latLng = [loc.lat, loc.lon];
+                                    const marker = L.marker(latLng, { icon: orangeIcon }).addTo(dashboardMap)
+                                        .bindPopup(`<b>Potential Location ${idx + 1}</b><br>Suitable for ${loc.business.replace(/_/g, ' ').toUpperCase()}<br>Crowd: ${loc.intensity.toUpperCase()}`);
+                                    window.orangeMarkers.push(marker);
+                                });
+
+                                // Use first match as epicenter for popular places
+                                const targetLat = matchData.matches[0].lat;
+                                const targetLon = matchData.matches[0].lon;
+
+                                // Open first popup
+                                if (window.orangeMarkers.length > 0) {
+                                    window.orangeMarkers[0].openPopup();
+                                }
+
+                                // Fly to the marker location — then draw heatmap AFTER animation ends
+                                dashboardMap.once('moveend', async () => {
+                                    // Re-sync map after flyTo (prevents geolocation override from winning)
+                                    window.map = dashboardMap;
+
+                                    // Now trigger popular places + crowd intensity heatmap from orange marker epicenter
+                                    if (typeof findPopularPlaces === 'function') {
+                                        try {
+                                            await findPopularPlaces(targetLat, targetLon, false);
+                                        } catch (err) {
+                                            console.error('Error fetching popular places:', err);
+                                        }
+                                    }
+                                });
+
+                                // Start the flyTo animation (will trigger moveend above when done)
+                                dashboardMap.flyTo([targetLat, targetLon], 14, {
+                                    animate: true,
+                                    duration: 1.5
+                                });
+
                             }, 1500);
                         }
                     } catch (e) {
