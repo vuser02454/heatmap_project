@@ -192,6 +192,11 @@ function initDashboardStartupForm() {
                                             duration: 1.5
                                         });
 
+                                        // Sync global map variable so `findPopularPlaces` and `updateCrowdIntensityDropdown` draw on the correct map
+                                        if (typeof map !== 'undefined' && typeof dashboardMap !== 'undefined') {
+                                            window.map = dashboardMap;
+                                        }
+
                                         // Fetch popular places using the orange marker as the epicenter
                                         // so that the 5km radius and heatmap overlay perfectly align with the marker
                                         if (typeof findPopularPlaces === 'function') {

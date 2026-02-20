@@ -161,11 +161,23 @@ _OVERPASS_URLS = [
 ]
 
 
+from django.core.cache import cache
+import hashlib
+
 def _run_overpass_query(query: str, timeout: int = 30):
     """
     Try one or more Overpass API endpoints and return parsed JSON data.
     Returns (data, error_message). On success, error_message is None.
+    Uses Django's cache to prevent Overpass rate limits (Too Many Requests).
     """
+    # 1. Check cache first
+    query_hash = hashlib.md5(query.encode('utf-8')).hexdigest()
+    cache_key = f"overpass_{query_hash}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return cached_data, None
+
+    # 2. If not cached, fetch from Overpass
     last_error = None
     headers = {'User-Agent': 'CrowdHeatmapApp/1.0 (Django)'}
     for url in _OVERPASS_URLS:
@@ -179,6 +191,9 @@ def _run_overpass_query(query: str, timeout: int = 30):
             if isinstance(data, dict) and data.get('remark'):
                 last_error = data.get('remark', 'Overpass API error')
                 continue
+            
+            # Cache the successful result for 15 minutes
+            cache.set(cache_key, data, timeout=900)
             return data, None
         except requests.exceptions.Timeout:
             last_error = 'Overpass API timeout. Please try again in a moment.'
@@ -186,6 +201,7 @@ def _run_overpass_query(query: str, timeout: int = 30):
             last_error = str(exc)
         except (ValueError, KeyError) as exc:
             last_error = f'Invalid Overpass response: {exc}'
+            
     return None, last_error
 
 @login_required
