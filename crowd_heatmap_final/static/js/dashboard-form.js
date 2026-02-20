@@ -182,20 +182,24 @@ function initDashboardStartupForm() {
                                     // Open first popup and center map on searched location to show 5km radius
                                     if (window.orangeMarkers.length > 0) {
                                         window.orangeMarkers[0].openPopup();
-                                    }
 
-                                    // Fly to the searched location with zoom 13 to well-display the 5km radius
-                                    dashboardMap.flyTo([lat, lon], 13, {
-                                        animate: true,
-                                        duration: 1.5
-                                    });
+                                        const targetLat = matchData.matches[0].lat;
+                                        const targetLon = matchData.matches[0].lon;
 
-                                    // Fetch popular places to show the 5km radius heatmap data on the map
-                                    if (typeof findPopularPlaces === 'function') {
-                                        try {
-                                            await findPopularPlaces(lat, lon, false);
-                                        } catch (err) {
-                                            console.error("Error fetching popular places:", err);
+                                        // Fly to the matched orange marker with zoom 13 to well-display the 5km radius globally
+                                        dashboardMap.flyTo([targetLat, targetLon], 13, {
+                                            animate: true,
+                                            duration: 1.5
+                                        });
+
+                                        // Fetch popular places using the orange marker as the epicenter
+                                        // so that the 5km radius and heatmap overlay perfectly align with the marker
+                                        if (typeof findPopularPlaces === 'function') {
+                                            try {
+                                                await findPopularPlaces(targetLat, targetLon, false);
+                                            } catch (err) {
+                                                console.error("Error fetching popular places:", err);
+                                            }
                                         }
                                     }
                                 }
